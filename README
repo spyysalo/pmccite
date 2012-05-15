@@ -1,0 +1,6 @@
+Extract pretty-printed article citation from PMC .nxml file.
+
+Usage: python pmccite.py FILE
+
+Under the MIT license:
+http://www.opensource.org/licenses/mit-license.php
