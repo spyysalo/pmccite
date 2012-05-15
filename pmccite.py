@@ -56,7 +56,8 @@ def format_default(a):
     return ' '.join(a)
 
 def format_wrap(pre, post, a):
-    return pre+format_default(a)+post
+    txt = format_default(a)
+    return pre+txt+post if txt.strip() != '' else ''
 
 def format_names(a):
     if len(a) < 1:
@@ -69,7 +70,7 @@ def format_names(a):
 # note: '[1]' in xpath restricts to first match.
 toextract = [
     ('author',  'article-meta/contrib-group/contrib[@contrib-type="author"]/name'),
-    ('year',    'article-meta/pub-date[@pub-type="collection"][1]/year[1]'),
+    ('year',    'article-meta/pub-date[@pub-type="ppub" or @pub-type="epub" or @pub-type="collection"][1]/year[1]'),
     ('title',   'article-meta/title-group[1]/article-title[1]'),
     ('journal', 'journal-meta/journal-id[@journal-id-type="nlm-ta"][1]'),
     ('volume',  'article-meta/volume[1]'),
@@ -99,20 +100,31 @@ separator = {
     'DEFAULT' : ' ',
 }
 
+required = {
+    'author' : True,
+    'year'   : True,
+    'title'  : True,
+    'journal': True,
+}
+
 def process_front(front, fn):
+    global options
+    
     all_texts = []
     for label, exp in toextract:
         texts = []
         for e in front.xpath(exp):
             text = extractor.get(label, extractor['DEFAULT'])(e)
             texts.append(text.encode(OUTPUT_ENCODING))
+
+        if len(texts) == 0 and (label in required or options.verbose):
+            print >> sys.stderr, "Warning: no %s found in %s" % (label, fn)
+
         all_texts.append(formatter.get(label, formatter['DEFAULT'])(texts))
         all_texts.append(separator.get(label, separator['DEFAULT']))
-    print ''.join(all_texts)
+    print respace(''.join(all_texts))
 
 def process(fn):
-    global options
-
     front_found = False
 
     for event, element in ET.iterparse(fn, events=("end", )):
